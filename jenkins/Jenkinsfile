@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         DOCKER_CREDS = credentials('dockerhub-creds')
+        GIT_CREDS = credentials('github-creds')
+
         DOCKER_USER = "${DOCKER_CREDS_USR}"
         IMAGE_BACKEND = "${DOCKER_USER}/backend-app"
         IMAGE_FRONTEND = "${DOCKER_USER}/frontend-app"
@@ -10,9 +12,16 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/tulasids5/taomish-devops-assignment.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'refs/heads/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/tulasids5/taomish-devops-assignment.git',
+                        credentialsId: 'github-creds'
+                    ]]
+                ])
             }
         }
 
@@ -36,7 +45,7 @@ pipeline {
         stage('Docker Login & Push') {
             steps {
                 sh """
-                echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_USER} --password-stdin
+                echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin
                 docker push ${IMAGE_BACKEND}:v1
                 docker push ${IMAGE_FRONTEND}:v1
                 """
@@ -46,10 +55,10 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: CI/CD Complete!"
+            echo "SUCCESS: CI/CD Completed "
         }
         failure {
-            echo "FAILED"
+            echo "FAILED "
         }
     }
 }
