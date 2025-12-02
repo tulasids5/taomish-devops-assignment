@@ -22,14 +22,6 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
-            steps {
-                dir('app/frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
-                }
-            }
-        }
 
         stage('Build Frontend') {
             steps {
