@@ -1,54 +1,29 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:24.0-dind'
-            args '--privileged'
-        }
-    }
+    agent any
 
     environment {
         DOCKER_CREDS = credentials('dockerhub-creds')
-        GIT_CREDS = credentials('github-creds')
-
-        DOCKER_USER = "${DOCKER_CREDS_USR}"
-        IMAGE_BACKEND = "${DOCKER_USER}/backend-app"
-        IMAGE_FRONTEND = "${DOCKER_USER}/frontend-app"
+        IMAGE_BACKEND = "${DOCKER_CREDS_USR}/backend-app"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: 'refs/heads/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/tulasids5/taomish-devops-assignment.git',
-                        credentialsId: 'github-creds'
-                    ]]
-                ])
+                git branch: 'main',
+                    url: 'https://github.com/tulasids5/taomish-devops-assignment.git'
             }
         }
 
         stage('Build Backend') {
             steps {
-                sh """
-                docker run --rm \
-                -v $PWD/app/backend:/app \
-                -w /app \
-                maven:3.9.9-eclipse-temurin-17 \
-                mvn clean package -DskipTests
-                """
+                sh 'mvn -f app/backend/pom.xml clean package -DskipTests'
             }
         }
 
-
         stage('Docker Build') {
             steps {
-                sh """
-                docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend
-                docker build -t ${IMAGE_FRONTEND}:v1 -f docker/Dockerfile.frontend app/frontend
-                """
+                sh "docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend"
             }
         }
 
@@ -57,7 +32,6 @@ pipeline {
                 sh """
                 echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin
                 docker push ${IMAGE_BACKEND}:v1
-                docker push ${IMAGE_FRONTEND}:v1
                 """
             }
         }
@@ -65,7 +39,7 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: CI/CD Completed "
+            echo "SUCCESS: Backend CI/CD Completed "
         }
         failure {
             echo "FAILED "
