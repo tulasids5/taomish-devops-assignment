@@ -28,7 +28,6 @@ pipeline {
                 dir('app/frontend') {
                     sh '''
                     export CI=false
-                    export NODE_OPTIONS=--openssl-legacy-provider
                     npm install
                     npm run build
                     '''
