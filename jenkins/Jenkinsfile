@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_CREDS = credentials('dockerhub-creds')
         IMAGE_BACKEND = "${DOCKER_CREDS_USR}/backend-app"
+        IMAGE_FRONTEND = "${DOCKER_CREDS_USR}/frontend-app"
     }
 
     stages {
@@ -21,9 +22,21 @@ pipeline {
             }
         }
 
+        stage('Build Frontend') {
+            steps {
+                dir('app/frontend') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
-                sh "docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend"
+                sh """
+                docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend
+                docker build -t ${IMAGE_FRONTEND}:v1 -f docker/Dockerfile.frontend app/frontend
+                """
             }
         }
 
@@ -32,6 +45,7 @@ pipeline {
                 sh """
                 echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin
                 docker push ${IMAGE_BACKEND}:v1
+                docker push ${IMAGE_FRONTEND}:v1
                 """
             }
         }
@@ -39,7 +53,7 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: Backend CI/CD Completed "
+            echo "SUCCESS: Backend + Frontend CI/CD Completed "
         }
         failure {
             echo "FAILED "
