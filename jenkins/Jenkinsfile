@@ -31,14 +31,19 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Frontend') {
             steps {
-                sh """
-                docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend
-                docker build -t ${IMAGE_FRONTEND}:v1 -f docker/Dockerfile.frontend app/frontend
-                """
+                dir('app/frontend') {
+                    sh '''
+                    export CI=false
+                    export NODE_OPTIONS=--openssl-legacy-provider
+                    npm install
+                    npm run build
+                    '''
+                }
             }
         }
+
 
         stage('Docker Login & Push') {
             steps {
