@@ -34,18 +34,18 @@ pipeline {
                 }
             }
         }
-        stage('Docker Login & Push') { 
-            steps { 
-                sh """
-                echo 
-                ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin 
-                docker push ${IMAGE_BACKEND}:v1 
-                docker push ${IMAGE_FRONTEND}:v1 
-                """ 
-            } 
-        } 
-    }
 
+        stage('Docker Build') {
+            steps {
+                sh """
+                echo 'Building Backend Docker Image...'
+                docker build -t ${IMAGE_BACKEND}:v1 -f docker/Dockerfile.backend app/backend
+
+                echo 'Building Frontend Docker Image...'
+                docker build -t ${IMAGE_FRONTEND}:v1 -f docker/Dockerfile.frontend app/frontend
+                """
+            }
+        }
 
         stage('Docker Login & Push') {
             steps {
